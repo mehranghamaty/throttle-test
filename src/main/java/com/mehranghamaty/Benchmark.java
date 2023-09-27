@@ -10,7 +10,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 
-public class Benchmark extends Thread {
+public class Benchmark implements Runnable {
     private HttpClient client;
     private HttpRequest request;
     private int number_of_responses;
