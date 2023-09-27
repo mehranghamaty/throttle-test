@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.time.Duration;
+import java.time.Instant;
 
 
 public class Benchmark extends Thread {
@@ -26,7 +28,7 @@ public class Benchmark extends Thread {
     
     @Override
     public void run() {
-        long start = System.nanoTime();
+        Instant start = Instant.now();
         
         try {
             this.client.send(this.request, null);
@@ -37,8 +39,9 @@ public class Benchmark extends Thread {
             exception = e;
             return;
         }
-        long end = System.nanoTime();
-        this.time_to_respond = end-start;
+        
+        Instant end = Instant.now();
+        this.time_to_respond = Duration.between(start, end).toMillis();
     }
 
     public long getTime() {
