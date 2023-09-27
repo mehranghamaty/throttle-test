@@ -16,10 +16,9 @@ public class App
     public static void main( String[] args ) throws URISyntaxException, InterruptedException
     {
         if(args.length != 3 && args.length != 4) {
-            System.out.println("Usage: app <end_point> <num_threads> <num_minutes> [optional_flag_for_pipestyle_output]");
+            System.out.println("Usage: app <end_point> <num_threads> <num_minutes> [optional flag to change output for piping]");
             System.exit(1);
         }
-
         URI uri;
         try {
             uri = new URI(args[0]);
@@ -29,49 +28,48 @@ public class App
         }
         int num_threads = Integer.parseInt(args[1]);
         int num_minutes = Integer.parseInt(args[2]);
-        
-        List<Benchmark> runs = new ArrayList<Benchmark>();
+        List<Thread> runs = new ArrayList<>();
+        List<Benchmark> results = new ArrayList<>();
 
         for(int i = 0; i < num_threads; ++i) {
-            Benchmark b;
-            b = new Benchmark(uri, num_minutes);
-            b.start();
-            runs.add(b);
+            Benchmark b = new Benchmark(uri, num_minutes);
+            Thread thread = new Thread(b, "thread "+i);
+            thread.start();
+            runs.add(thread);
+            results.add(b);
         }
 
         Runnable tick = new Runnable() {
             public void run() {
-                System.out.println("a minute has passed");
-            }
-        };
-        Runnable do_nothing = new Runnable() {
-            public void run() {
+                if(args.length == 3) {
+                    System.out.println("a minute has passed");
+                }
             }
         };
 
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        ScheduledFuture<?> promise = executor.schedule(do_nothing, num_minutes, null);
-        if(args.length == 3) {
-            promise = executor.scheduleAtFixedRate(tick, 1, 1, TimeUnit.MINUTES);
-        }
-
-        for(Benchmark b : runs) {
+        final ScheduledFuture<?> promise = executor.scheduleAtFixedRate(tick, 1, 1, TimeUnit.MINUTES);
+        
+        for(Thread thr : runs) {
             try {
-                b.join();
+                thr.join();
             } catch(InterruptedException e) {
+                System.out.println(e);
                 throw e;
             }
         }
         float average_qps = 0;
-        for(Benchmark b : runs) {
+        for(Benchmark b : results) {
             average_qps = average_qps + b.getQPS();
         }
         average_qps = average_qps / num_threads;
+
         if(args.length == 3) {
-            System.out.println("Average qps: " + average_qps);    
-            promise.cancel(true);
+            System.out.println( "Average qps: " + average_qps);
         } else {
             System.out.println(average_qps);
         }
+        promise.cancel(true);
+        System.exit(0);
     }
 }
