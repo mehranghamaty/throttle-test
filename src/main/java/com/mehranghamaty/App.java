@@ -4,7 +4,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Vector;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class App 
 {
@@ -12,7 +15,7 @@ public class App
     public static void main( String[] args ) throws URISyntaxException, InterruptedException
     {
         if(args.length != 3) {
-            System.out.println("Usage: app <end_point> <num_threads> <number_of_requests>");
+            System.out.println("Usage: app <end_point> <num_threads> <num_minutes>");
             System.exit(1);
         }
         URI uri;
@@ -23,16 +26,25 @@ public class App
             throw e;
         }
         int num_threads = Integer.parseInt(args[1]);
-        int number_of_requests = Integer.parseInt(args[2]);
+        int num_minutes = Integer.parseInt(args[2]);
         
         List<Benchmark> runs = new ArrayList<Benchmark>();
 
         for(int i = 0; i < num_threads; ++i) {
             Benchmark b;
-            b = new Benchmark(uri, number_of_requests);
+            b = new Benchmark(uri, num_minutes);
             b.start();
             runs.add(b);
         }
+
+        Runnable tick = new Runnable() {
+            public void run() {
+                System.out.println("a minute has passed");
+            }
+        };
+
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        executor.scheduleAtFixedRate(tick, 1, 1, TimeUnit.MINUTES);
 
         for(Benchmark b : runs) {
             try {
@@ -41,14 +53,12 @@ public class App
                 throw e;
             }
         }
-
-        long average_time = 0;
+        float average_qps = 0;
         for(Benchmark b : runs) {
-            average_time = average_time + b.getTime();
+            average_qps = average_qps + b.getQPS();
         }
-        average_time = average_time / num_threads;
+        average_qps = average_qps / num_threads;
 
-
-        System.out.println( "Time to process: " + average_time);
+        System.out.println( "Average qps: " + average_qps);
     }
 }

@@ -13,15 +13,15 @@ import java.time.Instant;
 public class Benchmark extends Thread {
     private HttpClient client;
     private HttpRequest request;
-    private long time_to_respond;
-    private int number_of_requests;
+    private int number_of_responses;
+    private int number_of_minutes;
     private URI uri;
     private Exception exception;
 
-    public Benchmark(URI uri, int number_of_requests) {
+    public Benchmark(URI uri, int number_of_minutes) {
         this.client = HttpClient.newHttpClient();
-        this.time_to_respond = -1;
-        this.number_of_requests = number_of_requests;
+        this.number_of_responses = 0;
+        this.number_of_minutes = number_of_minutes;
         this.uri = uri;
         
         this.request = HttpRequest
@@ -33,7 +33,8 @@ public class Benchmark extends Thread {
     @Override
     public void run() {
         Instant start = Instant.now();
-        for(int i = 0; i < this.number_of_requests; ++i) {
+        Instant end;
+        do {
             try {
                 this.client.send(this.request, BodyHandlers.ofString());
             } catch(IOException e) {
@@ -43,13 +44,13 @@ public class Benchmark extends Thread {
                 exception = e;
                 return;
             }
-        }
-        Instant end = Instant.now();
-        this.time_to_respond = Duration.between(start, end).toMillis();
+            this.number_of_responses++;
+            end = Instant.now();
+        } while(Duration.between(start, end).toMinutes() < this.number_of_minutes);
     }
 
-    public long getTime() {
-        return this.time_to_respond;
+    public long getQPS() {
+        return this.number_of_responses/this.number_of_minutes/60;
     }
 
     public Exception getException() {
