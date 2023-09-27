@@ -15,10 +15,11 @@ public class App
 
     public static void main( String[] args ) throws URISyntaxException, InterruptedException
     {
-        if(args.length != 3) {
-            System.out.println("Usage: app <end_point> <num_threads> <num_minutes>");
+        if(args.length != 3 && args.length != 4) {
+            System.out.println("Usage: app <end_point> <num_threads> <num_minutes> [optional_flag_for_pipestyle_output]");
             System.exit(1);
         }
+
         URI uri;
         try {
             uri = new URI(args[0]);
@@ -43,10 +44,17 @@ public class App
                 System.out.println("a minute has passed");
             }
         };
+        Runnable do_nothing = new Runnable() {
+            public void run() {
+            }
+        };
 
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        final ScheduledFuture<?> promise = executor.scheduleAtFixedRate(tick, 1, 1, TimeUnit.MINUTES);
-        
+        ScheduledFuture<?> promise = executor.schedule(do_nothing, num_minutes, null);
+        if(args.length == 3) {
+            promise = executor.scheduleAtFixedRate(tick, 1, 1, TimeUnit.MINUTES);
+        }
+
         for(Benchmark b : runs) {
             try {
                 b.join();
@@ -59,9 +67,11 @@ public class App
             average_qps = average_qps + b.getQPS();
         }
         average_qps = average_qps / num_threads;
-
-        System.out.println( "Average qps: " + average_qps);
-        System.exit(0);
-        promise.cancel(true);
+        if(args.length == 3) {
+            System.out.println("Average qps: " + average_qps);    
+            promise.cancel(true);
+        } else {
+            System.out.println(average_qps);
+        }
     }
 }
