@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class App 
@@ -44,8 +45,8 @@ public class App
         };
 
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-        executor.scheduleAtFixedRate(tick, 1, 1, TimeUnit.MINUTES);
-
+        final ScheduledFuture<?> promise = executor.scheduleAtFixedRate(tick, 1, 1, TimeUnit.MINUTES);
+        
         for(Benchmark b : runs) {
             try {
                 b.join();
@@ -60,5 +61,7 @@ public class App
         average_qps = average_qps / num_threads;
 
         System.out.println( "Average qps: " + average_qps);
+        System.exit(0);
+        promise.cancel(true);
     }
 }
