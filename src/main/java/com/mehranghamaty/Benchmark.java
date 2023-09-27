@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -33,7 +35,7 @@ public class Benchmark extends Thread {
         Instant start = Instant.now();
         for(int i = 0; i < this.number_of_requests; ++i) {
             try {
-                this.client.send(this.request, null);
+                this.client.send(this.request, BodyHandlers.ofString());
             } catch(IOException e) {
                 exception = e;
                 return;
